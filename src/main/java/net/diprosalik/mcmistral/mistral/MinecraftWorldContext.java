@@ -1,18 +1,21 @@
 package net.diprosalik.mcmistral.mistral;
 
 import net.minecraft.component.DataComponentTypes;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.recipe.RecipeEntry;
-import net.minecraft.recipe.RecipeType;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.LightType;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class MinecraftWorldContext {
@@ -22,28 +25,68 @@ public class MinecraftWorldContext {
 
         var server = source.getServer();
         var world = source.getWorld();
-        long rawTime = world.getTimeOfDay();
-        long dailyTime = rawTime % 24000;
-        long daysPlayed = rawTime / 24000;
 
-        context.append("=== MINECRAFT WORLD CONTEXT ===\n");
+        long dailyTime = world.getTimeOfDay() % 24000;
+        if (dailyTime < 0) {
+            dailyTime += 24000;
+        }
+        long daysPlayed = world.getTimeOfDay() / 24000;
+
+        String worldPhase;
+        if (dailyTime >= 0 && dailyTime < 9000) {
+            worldPhase = "DAYTIME (Safe, no surface monster spawns)";
+        } else if (dailyTime >= 9000 && dailyTime < 12000) {
+            worldPhase = "SUNSET (Dusk, light dropping)";
+        } else if (dailyTime >= 12000 && dailyTime < 13000) {
+            worldPhase = "LATE SUNSET (Beds become usable)";
+        } else if (dailyTime >= 13000 && dailyTime < 23000) {
+            worldPhase = "NIGHTTIME (Hostile monsters spawn on surface, Beds are usable)";
+        } else {
+            worldPhase = "SUNRISE (Dawn, monsters start burning)";
+        }
+
+        double mspt = server.getAverageTickTime();
+        double tps = Math.min(20.0, 1000.0 / mspt);
+
+        context.append("=== MINECRAFT WORLD CONTEXT (DEBUG/F3 ACTIVE) ===\n");
         context.append("- Game Version: ").append(server.getVersion()).append("\n");
+        context.append("- Server Performance: ").append(String.format("%.1f", tps)).append(" TPS / ").append(String.format("%.1f", mspt)).append(" MSPT\n");
         context.append("- Dimension: ").append(world.getRegistryKey().getValue().toString()).append("\n");
         context.append("- Days Passed in World: ").append(daysPlayed).append("\n");
-        context.append("- Time of Day: ").append(dailyTime).append(" ticks (0=6:00 AM sunrise, 6000=12:00 PM midday, 9000=3:00 PM sunset starts, 12000=6:00 PM dusk/darksunset, 13000=night start, 18000=12:00 AM midnight)\n");
+        context.append("- Time Ticks: ").append(dailyTime).append(" / 24000\n");
+        context.append("- World Phase: ").append(worldPhase).append("\n");
         context.append("- Weather: ").append(world.isThundering() ? "Thunderstorm" : (world.isRaining() ? "Raining/Snowing" : "Clear/Sunny")).append("\n");
         context.append("- Difficulty: ").append(world.getDifficulty().getName()).append("\n");
 
         if (source.getEntity() instanceof ServerPlayerEntity player) {
             Vec3d pos = player.getPos();
             BlockPos blockPos = player.getBlockPos();
+            ChunkPos chunkPos = new ChunkPos(blockPos);
+
+            int skyLight = world.getLightLevel(LightType.SKY, blockPos);
+            int blockLight = world.getLightLevel(LightType.BLOCK, blockPos);
+            int totalLight = world.getLightLevel(blockPos);
+
+            int seaLevel = world.getSeaLevel();
+            boolean isInCave = skyLight == 0 && blockPos.getY() < seaLevel && !world.getDimensionEntry().value().hasCeiling();
+
+            context.append("\n=== F3 DEBUG NAVIGATION & LOCATION ===\n");
+            context.append(String.format("- XYZ Coordinates: X: %.3f, Y: %.5f, Z: %.3f\n", pos.x, pos.y, pos.z));
+            context.append(String.format("- Block Pos: [%d, %d, %d]\n", blockPos.getX(), blockPos.getY(), blockPos.getZ()));
+            context.append(String.format("- Chunk Pos: [%d, %d] (In Chunk Local: X: %d, Y: %d, Z: %d)\n",
+                    chunkPos.x, chunkPos.z, blockPos.getX() & 15, blockPos.getY() & 15, blockPos.getZ() & 15));
+            context.append("- Facing Direction: ").append(player.getHorizontalFacing().getName().toUpperCase())
+                    .append(" (Yaw: ").append(String.format("%.1f", player.getYaw()))
+                    .append(" / Pitch: ").append(String.format("%.1f", player.getPitch())).append(")\n");
+
+            context.append(String.format("- F3 Light Level: %d (Sky: %d, Block: %d)\n", totalLight, skyLight, blockLight));
+            context.append("- Is in Cave/Underground: ").append(isInCave).append("\n");
+            context.append("- Sea Level Reference: ").append(seaLevel).append("\n");
+            //context.append("- Slime Chunk: ").append(net.minecraft.util.math.random.ChunkRandom.getSlimeChunkSeed(chunkPos.x, chunkPos.z, world.getSeed(), 987234911L) % 10 == 0).append("\n");
 
             context.append("\n=== PLAYER STATUS ===\n");
             context.append("- Name: ").append(player.getName().getString()).append("\n");
-            context.append("- Position: X: ").append(String.format("%.1f", pos.x))
-                    .append(", Y: ").append(String.format("%.1f", pos.y))
-                    .append(", Z: ").append(String.format("%.1f", pos.z)).append("\n");
-            context.append("- Facing Direction: ").append(player.getHorizontalFacing().getName().toUpperCase()).append("\n");
+            context.append("- Has permission Level 2: ").append(source.hasPermissionLevel(2));
             context.append("- Gamemode: ").append(player.interactionManager.getGameMode().getName()).append("\n");
             context.append("- Is on Ground: ").append(player.isOnGround()).append("\n");
             context.append("- Is Swimming: ").append(player.isSwimming()).append("\n");
@@ -101,31 +144,42 @@ public class MinecraftWorldContext {
                 context.append("- Inventory is completely empty.\n");
             }
 
-            context.append("\n=== CRAFTING KNOWLEDGE ===\n");
-            context.append("- Available Crafting Recipes: ");
-            var recipeManager = world.getRecipeManager();
-            var craftingRecipes = recipeManager.listAllOfType(RecipeType.CRAFTING);
-            List<String> possibleCrafts = new ArrayList<>();
+            context.append("\n=== INSTALLED MODS & ITEMS ===\n");
+            Map<String, List<String>> itemsByMod = new HashMap<>();
 
-            for (RecipeEntry<?> recipeEntry : craftingRecipes) {
-                var recipe = recipeEntry.value();
-                ItemStack resultStack = recipe.getResult(world.getRegistryManager());
+            for (Item item : Registries.ITEM) {
+                Identifier id = Registries.ITEM.getId(item);
+                String namespace = id.getNamespace();
 
-                if (!resultStack.isEmpty()) {
-                    Identifier resultId = Registries.ITEM.getId(resultStack.getItem());
-                    if (!resultId.equals(Registries.ITEM.getId(net.minecraft.item.Items.AIR))) {
-                        String resultString = resultId.toString();
-                        if (!possibleCrafts.contains(resultString)) {
-                            if (possibleCrafts.size() < 25) {
-                                possibleCrafts.add(resultString);
-                            } else {
-                                break;
-                            }
-                        }
-                    }
+                if (!namespace.equals("minecraft") && !namespace.equals("brigadier")) {
+                    itemsByMod.computeIfAbsent(namespace, k -> new ArrayList<>()).add(id.getPath());
                 }
             }
-            context.append(String.join(", ", possibleCrafts)).append("\n");
+
+            if (itemsByMod.isEmpty()) {
+                context.append("- No external custom item mods detected.\n");
+            } else {
+                for (Map.Entry<String, List<String>> entry : itemsByMod.entrySet()) {
+                    String modId = entry.getKey();
+                    List<String> items = entry.getValue();
+
+                    context.append("- Mod [").append(modId).append("] provides items: ");
+                    if (items.size() > 40) {
+                        context.append(items.stream().limit(40).collect(Collectors.joining(", ")))
+                                .append("... (and ").append(items.size() - 40).append(" more items)");
+                    } else {
+                        context.append(String.join(", ", items));
+                    }
+                    context.append("\n");
+                }
+            }
+
+            net.minecraft.util.hit.BlockHitResult hit = (net.minecraft.util.hit.BlockHitResult) player.raycast(5.0, 0.0f, false);
+            if (hit.getType() == net.minecraft.util.hit.HitResult.Type.BLOCK) {
+                BlockPos targetedPos = hit.getBlockPos();
+                String targetedBlock = Registries.BLOCK.getId(world.getBlockState(targetedPos).getBlock()).toString();
+                context.append("- Looking at Block: ").append(targetedBlock).append("\n");
+            }
 
             context.append("\n=== IMMEDIATE ENVIRONMENT ===\n");
             context.append("- Block at Feet: ").append(Registries.BLOCK.getId(world.getBlockState(blockPos).getBlock()).toString()).append("\n");
