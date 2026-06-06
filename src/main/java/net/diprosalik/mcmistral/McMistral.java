@@ -1,7 +1,11 @@
 package net.diprosalik.mcmistral;
 
+import me.shedaniel.autoconfig.AutoConfig;
+import me.shedaniel.autoconfig.serializer.GsonConfigSerializer;
 import net.diprosalik.mcmistral.mistral.MistralClient;
 import net.diprosalik.mcmistral.mistral.MistralCommand;
+import net.diprosalik.mcmistral.mistral.MistralConfig;
+import net.diprosalik.mcmistral.mistral.MistralJoinHandler;
 import net.fabricmc.api.ModInitializer;
 
 import org.slf4j.Logger;
@@ -13,6 +17,8 @@ public class McMistral implements ModInitializer {
 
 	@Override
 	public void onInitialize() {
+		AutoConfig.register(MistralConfig.class, GsonConfigSerializer::new);
 		MistralCommand.register();
+		MistralJoinHandler.register();
 	}
 }

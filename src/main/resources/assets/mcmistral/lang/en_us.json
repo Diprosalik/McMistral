@@ -1,0 +1,13 @@
+{
+  "text.autoconfig.mcmistral.title": "McMistral Configuration",
+  "text.autoconfig.mcmistral.option.apiKey": "Mistral API Key",
+  "text.autoconfig.mcmistral.option.apiKey.@Tooltip": "Enter your Mistral AI API key here.",
+  "text.autoconfig.mcmistral.option.modelName": "AI Model",
+  "text.autoconfig.mcmistral.option.modelName.@Tooltip": "The Mistral model used for responses (e.g., mistral-small-latest).",
+
+  "text.autoconfig.mcmistral.option.enableWelcomeGreeting": "Enable Welcome Greeting",
+  "text.autoconfig.mcmistral.option.enableWelcomeGreeting.@Tooltip": "If disabled, Mistral will not automatically query the API when you join a world, saving your API tokens.",
+
+  "key.mcmistral.ask": "Open Mistral Prompt",
+  "category.mcmistral": "McMistral Mod"
+}

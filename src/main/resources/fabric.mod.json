@@ -3,15 +3,15 @@
 	"id": "mcmistral",
 	"version": "${version}",
 	"name": "McMistral",
-	"description": "This is an example description! Tell everyone what your mod is about!",
+	"description": "Integrated Minecraft Mistral AI",
 	"authors": [
-		"Me!"
+		"Diprosalik"
 	],
 	"contact": {
 		"homepage": "https://fabricmc.net/",
 		"sources": "https://github.com/FabricMC/fabric-example-mod"
 	},
-	"license": "CC0-1.0",
+	"license": "MIT",
 	"icon": "assets/mcmistral/icon.png",
 	"environment": "*",
 	"entrypoints": {
@@ -20,6 +20,12 @@
 		],
 		"fabric-datagen": [
 			"net.diprosalik.mcmistral.McMistralDataGenerator"
+		],
+		"client": [
+			"net.diprosalik.mcmistral.McMistralClient"
+		],
+		"modmenu": [
+			"net.diprosalik.mcmistral.modmenu.ModMenuIntegration"
 		]
 	},
 	"mixins": [

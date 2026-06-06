@@ -1,8 +1,9 @@
 package net.diprosalik.mcmistral.mistral;
 
+import me.shedaniel.autoconfig.AutoConfig;
 import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -10,66 +11,37 @@ import java.net.http.HttpResponse;
 import java.util.concurrent.CompletableFuture;
 
 public class MistralClient {
-    private static String apiKey = "";
-
-    public static void setApiKey(String key) {
-        apiKey = key;
-    }
 
     public static boolean hasApiKey() {
-        return apiKey != null && !apiKey.trim().isEmpty();
+        MistralConfig config = AutoConfig.getConfigHolder(MistralConfig.class).getConfig();
+        return config.apiKey != null && !config.apiKey.trim().isEmpty();
     }
 
     public static CompletableFuture<String> queryMistral(String prompt, ServerCommandSource source) {
         return CompletableFuture.supplyAsync(() -> {
-            if (!hasApiKey()) {
-                return "Error: No API key set! Use /mistral apikey <key>";
-            }
+            MistralConfig config = AutoConfig.getConfigHolder(MistralConfig.class).getConfig();
+            String apiKey = config.apiKey;
 
-            if ("testapikey".equals(apiKey)) {
-                try {
-                    Thread.sleep(2000);
-                    return "Simulation Mode Active! Your code works perfectly. You asked: \" " + prompt + "\"";
-                } catch (InterruptedException e) {
-                    return "Error during simulation.";
-                }
+            if (!hasApiKey()) {
+                return "Error: No API key set! Set it in the Cloth Config screen.";
             }
 
             try {
-                String mcVersion = source.getServer().getVersion();
-                long worldTime = source.getWorld().getTimeOfDay() % 24000;
-                boolean isRaining = source.getWorld().isRaining();
-
-                // 1. Koordinaten und Spielerdaten live auslesen
-                String playerStatus = "Unknown";
-                String coordinates = "Unknown";
-                if (source.getEntity() instanceof ServerPlayerEntity player) {
-                    playerStatus = String.format("Name: %s, Health: %.1f/20, Hunger: %d/20, Level: %d",
-                            player.getName().getString(),
-                            player.getHealth(),
-                            player.getHungerManager().getFoodLevel(),
-                            player.experienceLevel);
-
-                    Vec3d pos = player.getPos();
-                    coordinates = String.format("X: %.1f, Y: %.1f, Z: %.1f", pos.x, pos.y, pos.z);
-                }
-
+                String dynamicGameContext = MinecraftWorldContext.buildContext(source);
                 HttpClient client = HttpClient.newHttpClient();
 
-                // 2. System-Prompt mit Koordinaten-Wissen erweitern + Formatierungs-Verbot
-                String systemPrompt = "You are an omniscient Minecraft expert and a helpful in-game chatbot. "
-                        + "CURRENT GAME STATUS:\n"
-                        + "- Minecraft Version: " + mcVersion + "\n"
-                        + "- Ingame Time: " + worldTime + " ticks (0=morning, 6000=noon, 12000=sunset, 18000=midnight)\n"
-                        + "- Weather: " + (isRaining ? "Raining/Snowing" : "Sunny/Clear") + "\n"
-                        + "- Player Status: " + playerStatus + "\n"
-                        + "- Player Coordinates: " + coordinates + "\n\n"
-                        + "CRITICAL: Always reply in RAW TEXT ONLY. Do not use markdown like asterisks (**), hashtags, bullet points, or any other formatting. "
-                        + "Always reply in English. Use the game status and coordinates only if it's relevant to the player's question. "
-                        + "Keep your answers precise, helpful, and short (maximum 2-3 sentences) to fit perfectly into the Minecraft chat.";
+                String systemPrompt = "You are a Minecraft assistant with server administration rights. "
+                        + "You can request the execution of an in-game command by formatting your response in a special way.\n\n"
+                        + dynamicGameContext + "\n\n"
+                        + "CRITICAL RULES:\n"
+                        + "1. STRICT RULE: You are ONLY allowed to execute a command if the player EXPLICITLY asks you to perform an action (e.g., 'teleport me', 'make it day', 'kill the sheep', 'give me a diamond').\n"
+                        + "2. If the player ONLY asks a question or asks for information (e.g., 'How do I craft X?', 'What is my health?', 'Where am I?'), you MUST NOT execute any commands! Just answer with text.\n"
+                        + "3. If an action is requested, include the exact command enclosed in [COMMAND:...] at the VERY END of your response. Examples: [COMMAND:time set day] or [COMMAND:give @s minecraft:crafting_table 1].\n"
+                        + "4. Your main text response must remain RAW TEXT ONLY without markdown.\n"
+                        + "5. Keep your explanation very short (1-2 sentences) and always in English.";
 
                 String jsonBody = "{"
-                        + "\"model\": \"mistral-small-latest\","
+                        + "\"model\": \"" + config.modelName + "\","
                         + "\"messages\": ["
                         + "  {\"role\": \"system\", \"content\": \"" + systemPrompt.replace("\"", "\\\"").replace("\n", "\\n") + "\"},"
                         + "  {\"role\": \"user\", \"content\": \"" + prompt.replace("\"", "\\\"") + "\"}"
@@ -88,7 +60,9 @@ public class MistralClient {
                 HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
                 if (response.statusCode() == 200) {
-                    return parseResponse(response.body());
+                    String rawResponse = parseResponse(response.body());
+
+                    return handleCommandExecution(rawResponse, source);
                 } else {
                     return "Error from Mistral API (Status " + response.statusCode() + "): " + response.body();
                 }
@@ -97,6 +71,35 @@ public class MistralClient {
                 return "Error connecting to Mistral: " + e.getMessage();
             }
         });
+    }
+
+    private static String handleCommandExecution(String responseText, ServerCommandSource source) {
+        if (responseText.contains("[COMMAND:")) {
+            int start = responseText.indexOf("[COMMAND:");
+            int end = responseText.indexOf("]", start);
+
+            if (end != -1) {
+                String command = responseText.substring(start + 9, end).trim();
+                String cleanText = responseText.substring(0, start).trim();
+
+                source.getServer().execute(() -> {
+                    try {
+                        ServerCommandSource adminPlayerSource = source
+                                .withLevel(4)
+                                .withSilent();
+
+                        source.getServer().getCommandManager().executeWithPrefix(adminPlayerSource, command);
+
+                        source.sendFeedback(() -> Text.literal("[Mistral executed: /" + command + "]").formatted(Formatting.GREEN), false);
+                    } catch (Exception e) {
+                        source.sendError(Text.literal("Failed to execute command: " + e.getMessage()));
+                    }
+                });
+
+                return cleanText;
+            }
+        }
+        return responseText;
     }
 
     private static String parseResponse(String responseBody) {
@@ -126,13 +129,11 @@ public class MistralClient {
                 if (end != -1) {
                     String result = responseBody.substring(start, end);
 
-                    // JSON-Zeichen bereinigen
                     result = result
                             .replace("\\n", "\n")
                             .replace("\\\"", "\"")
                             .replace("\\\\", "\\");
 
-                    // 3. Letzte Instanz: Filtert alle Markdown-Überbleibsel (Sterne, Rauten) für Raw Text heraus
                     return result
                             .replace("**", "")
                             .replace("*", "")
