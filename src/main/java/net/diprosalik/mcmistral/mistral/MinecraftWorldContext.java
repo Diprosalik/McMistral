@@ -30,7 +30,7 @@ public class MinecraftWorldContext {
         context.append("- Game Version: ").append(server.getVersion()).append("\n");
         context.append("- Dimension: ").append(world.getRegistryKey().getValue().toString()).append("\n");
         context.append("- Days Passed in World: ").append(daysPlayed).append("\n");
-        context.append("- Time of Day: ").append(dailyTime).append(" ticks (0=sunrise, 6000=midday, 12000=sunset, 18000=midnight)\n");
+        context.append("- Time of Day: ").append(dailyTime).append(" ticks (0=6:00 AM sunrise, 6000=12:00 PM midday, 9000=3:00 PM sunset starts, 12000=6:00 PM dusk/darksunset, 13000=night start, 18000=12:00 AM midnight)\n");
         context.append("- Weather: ").append(world.isThundering() ? "Thunderstorm" : (world.isRaining() ? "Raining/Snowing" : "Clear/Sunny")).append("\n");
         context.append("- Difficulty: ").append(world.getDifficulty().getName()).append("\n");
 

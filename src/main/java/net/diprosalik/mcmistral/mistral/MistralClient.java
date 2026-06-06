@@ -61,7 +61,6 @@ public class MistralClient {
 
                 if (response.statusCode() == 200) {
                     String rawResponse = parseResponse(response.body());
-
                     return handleCommandExecution(rawResponse, source);
                 } else {
                     return "Error from Mistral API (Status " + response.statusCode() + "): " + response.body();
@@ -89,7 +88,6 @@ public class MistralClient {
                                 .withSilent();
 
                         source.getServer().getCommandManager().executeWithPrefix(adminPlayerSource, command);
-
                         source.sendFeedback(() -> Text.literal("[Mistral executed: /" + command + "]").formatted(Formatting.GREEN), false);
                     } catch (Exception e) {
                         source.sendError(Text.literal("Failed to execute command: " + e.getMessage()));

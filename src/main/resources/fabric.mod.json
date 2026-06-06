@@ -8,8 +8,7 @@
 		"Diprosalik"
 	],
 	"contact": {
-		"homepage": "https://fabricmc.net/",
-		"sources": "https://github.com/FabricMC/fabric-example-mod"
+		"sources": "https://github.com/Diprosalik/McMistral.git"
 	},
 	"license": "MIT",
 	"icon": "assets/mcmistral/icon.png",

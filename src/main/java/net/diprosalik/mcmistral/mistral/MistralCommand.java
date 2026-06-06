@@ -4,6 +4,7 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
@@ -14,19 +15,14 @@ public class MistralCommand {
                     .then(CommandManager.literal("apikey")
                             .then(CommandManager.argument("key", StringArgumentType.string())
                                     .executes(context -> {
+                                        ServerCommandSource source = context.getSource();
                                         String key = StringArgumentType.getString(context, "key");
 
                                         MistralConfig config = me.shedaniel.autoconfig.AutoConfig.getConfigHolder(MistralConfig.class).getConfig();
                                         config.apiKey = key;
                                         me.shedaniel.autoconfig.AutoConfig.getConfigHolder(MistralConfig.class).save();
 
-                                        if ("testapikey".equals(key)) {
-                                            context.getSource().sendFeedback(() ->
-                                                    Text.literal("Simulation mode activated!").formatted(Formatting.YELLOW), false);
-                                        } else {
-                                            context.getSource().sendFeedback(() ->
-                                                    Text.literal("API key successfully set and saved permanently!").formatted(Formatting.GREEN), false);
-                                        }
+                                        source.sendFeedback(() -> Text.literal("API key has been set successfully.").formatted(Formatting.GREEN), false);
                                         return 1;
                                     })
                             )
@@ -42,12 +38,17 @@ public class MistralCommand {
                                             return 0;
                                         }
 
-                                        source.sendFeedback(() -> Text.literal("Mistral is thinking...").formatted(Formatting.GRAY), false);
+                                        if (source.getEntity() instanceof ServerPlayerEntity player) {
+                                            player.sendMessage(Text.literal("[Mistral is thinking...]").formatted(Formatting.GRAY), true);
+                                        }
 
                                         MistralClient.queryMistral(prompt, source).thenAccept(response -> {
-                                            source.sendFeedback(() ->
-                                                    Text.literal("[Mistral]: ").formatted(Formatting.GOLD)
-                                                            .append(Text.literal(response).formatted(Formatting.WHITE)), false);
+                                            if (source.getEntity() instanceof ServerPlayerEntity player) {
+                                                player.sendMessage(Text.literal(""), true);
+
+                                                player.sendMessage(Text.literal(""), false);
+                                                player.sendMessage(Text.literal("[Mistral]: ").formatted(Formatting.GOLD).append(Text.literal(response).formatted(Formatting.WHITE)), false);
+                                            }
                                         });
 
                                         return 1;
