@@ -1,5 +1,6 @@
 package net.diprosalik.mcmistral.mistral;
 
+import me.shedaniel.autoconfig.AutoConfig;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.math.Vec3d;
@@ -10,26 +11,25 @@ import java.net.http.HttpResponse;
 import java.util.concurrent.CompletableFuture;
 
 public class MistralClient {
-    private static String apiKey = "";
-
-    public static void setApiKey(String key) {
-        apiKey = key;
-    }
 
     public static boolean hasApiKey() {
-        return apiKey != null && !apiKey.trim().isEmpty();
+        MistralConfig config = AutoConfig.getConfigHolder(MistralConfig.class).getConfig();
+        return config.apiKey != null && !config.apiKey.trim().isEmpty();
     }
 
     public static CompletableFuture<String> queryMistral(String prompt, ServerCommandSource source) {
         return CompletableFuture.supplyAsync(() -> {
+            MistralConfig config = AutoConfig.getConfigHolder(MistralConfig.class).getConfig();
+            String apiKey = config.apiKey;
+
             if (!hasApiKey()) {
-                return "Error: No API key set! Use /mistral apikey <key>";
+                return "Error: No API key set! Set it in the Mod Menu / Cloth Config screen.";
             }
 
             if ("testapikey".equals(apiKey)) {
                 try {
                     Thread.sleep(2000);
-                    return "Simulation Mode Active! Your code works perfectly. You asked: \" " + prompt + "\"";
+                    return "Simulation Mode Active! Your code works perfectly. You asked: \"" + prompt + "\"";
                 } catch (InterruptedException e) {
                     return "Error during simulation.";
                 }
@@ -40,7 +40,6 @@ public class MistralClient {
                 long worldTime = source.getWorld().getTimeOfDay() % 24000;
                 boolean isRaining = source.getWorld().isRaining();
 
-                // 1. Koordinaten und Spielerdaten live auslesen
                 String playerStatus = "Unknown";
                 String coordinates = "Unknown";
                 if (source.getEntity() instanceof ServerPlayerEntity player) {
@@ -56,7 +55,6 @@ public class MistralClient {
 
                 HttpClient client = HttpClient.newHttpClient();
 
-                // 2. System-Prompt mit Koordinaten-Wissen erweitern + Formatierungs-Verbot
                 String systemPrompt = "You are an omniscient Minecraft expert and a helpful in-game chatbot. "
                         + "CURRENT GAME STATUS:\n"
                         + "- Minecraft Version: " + mcVersion + "\n"
@@ -69,7 +67,7 @@ public class MistralClient {
                         + "Keep your answers precise, helpful, and short (maximum 2-3 sentences) to fit perfectly into the Minecraft chat.";
 
                 String jsonBody = "{"
-                        + "\"model\": \"mistral-small-latest\","
+                        + "\"model\": \"" + config.modelName + "\","
                         + "\"messages\": ["
                         + "  {\"role\": \"system\", \"content\": \"" + systemPrompt.replace("\"", "\\\"").replace("\n", "\\n") + "\"},"
                         + "  {\"role\": \"user\", \"content\": \"" + prompt.replace("\"", "\\\"") + "\"}"

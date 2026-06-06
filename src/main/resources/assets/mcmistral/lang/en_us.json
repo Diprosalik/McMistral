@@ -1,0 +1,7 @@
+{
+  "text.autoconfig.mcmistral.title": "McMistral Configuration",
+  "text.autoconfig.mcmistral.option.apiKey": "Mistral API Key",
+  "text.autoconfig.mcmistral.option.apiKey.@Tooltip": "Enter your Mistral AI API key here.",
+  "text.autoconfig.mcmistral.option.modelName": "AI Model",
+  "text.autoconfig.mcmistral.option.modelName.@Tooltip": "The Mistral model used for responses (e.g., mistral-small-latest)."
+}

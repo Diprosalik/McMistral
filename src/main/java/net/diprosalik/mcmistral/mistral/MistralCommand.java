@@ -8,8 +8,6 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
 public class MistralCommand {
-    private static String currentKeyForStatus = "";
-
     public static void register() {
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
             dispatcher.register(CommandManager.literal("mistral")
@@ -17,15 +15,17 @@ public class MistralCommand {
                             .then(CommandManager.argument("key", StringArgumentType.string())
                                     .executes(context -> {
                                         String key = StringArgumentType.getString(context, "key");
-                                        MistralClient.setApiKey(key);
-                                        currentKeyForStatus = key;
+
+                                        MistralConfig config = me.shedaniel.autoconfig.AutoConfig.getConfigHolder(MistralConfig.class).getConfig();
+                                        config.apiKey = key;
+                                        me.shedaniel.autoconfig.AutoConfig.getConfigHolder(MistralConfig.class).save();
 
                                         if ("testapikey".equals(key)) {
                                             context.getSource().sendFeedback(() ->
                                                     Text.literal("Simulation mode activated!").formatted(Formatting.YELLOW), false);
                                         } else {
                                             context.getSource().sendFeedback(() ->
-                                                    Text.literal("API key successfully set!").formatted(Formatting.GREEN), false);
+                                                    Text.literal("API key successfully set and saved permanently!").formatted(Formatting.GREEN), false);
                                         }
                                         return 1;
                                     })
@@ -46,7 +46,7 @@ public class MistralCommand {
 
                                         MistralClient.queryMistral(prompt, source).thenAccept(response -> {
                                             source.sendFeedback(() ->
-                                                    Text.literal("[Mistral]: ").formatted(Formatting.DARK_PURPLE)
+                                                    Text.literal("[Mistral]: ").formatted(Formatting.GOLD)
                                                             .append(Text.literal(response).formatted(Formatting.WHITE)), false);
                                         });
 
@@ -56,21 +56,24 @@ public class MistralCommand {
                     )
                     .then(CommandManager.literal("status")
                             .executes(context -> {
+                                MistralConfig config = me.shedaniel.autoconfig.AutoConfig.getConfigHolder(MistralConfig.class).getConfig();
                                 if (!MistralClient.hasApiKey()) {
                                     context.getSource().sendFeedback(() -> Text.literal("Status: No API key set.").formatted(Formatting.RED), false);
-                                } else if ("testapikey".equals(currentKeyForStatus)) {
+                                } else if ("testapikey".equals(config.apiKey)) {
                                     context.getSource().sendFeedback(() -> Text.literal("Status: Simulation Mode Active.").formatted(Formatting.YELLOW), false);
                                 } else {
-                                    context.getSource().sendFeedback(() -> Text.literal("Status: Connected (Ready to use).").formatted(Formatting.GREEN), false);
+                                    context.getSource().sendFeedback(() -> Text.literal("Status: Connected (Model: " + config.modelName + ")").formatted(Formatting.GREEN), false);
                                 }
                                 return 1;
                             })
                     )
                     .then(CommandManager.literal("clear")
                             .executes(context -> {
-                                MistralClient.setApiKey("");
-                                currentKeyForStatus = "";
-                                context.getSource().sendFeedback(() -> Text.literal("API key has been cleared from memory.").formatted(Formatting.RED), false);
+                                MistralConfig config = me.shedaniel.autoconfig.AutoConfig.getConfigHolder(MistralConfig.class).getConfig();
+                                config.apiKey = "";
+                                me.shedaniel.autoconfig.AutoConfig.getConfigHolder(MistralConfig.class).save();
+
+                                context.getSource().sendFeedback(() -> Text.literal("API key has been cleared and deleted from config.").formatted(Formatting.RED), false);
                                 return 1;
                             })
                     )
