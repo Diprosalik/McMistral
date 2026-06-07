@@ -67,7 +67,7 @@ Thanks to Mixins, the AI automatically detects items and recipes from other mods
 <br>
 
 <div align="center">
-  <sub>Version 1.0.0-beta.</sub>
+  <sub>Version 1.0.0-alpha.</sub>
   <br>
   ⚠️ Unofficial fan project. Please report bugs via the Issue Tracker!
 </div>
