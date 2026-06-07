@@ -19,15 +19,11 @@ public class MistralJoinHandler {
 
             ServerPlayerEntity player = handler.getPlayer();
             var source = player.getCommandSource();
-
             int gamesLeft = player.getStatHandler().getStat(Stats.CUSTOM.getOrCreateStat(Stats.LEAVE_GAME));
 
-            String prompt;
-            if (gamesLeft == 0) {
-                prompt = "The player " + player.getName().getString() + " just joined this world for the VERY FIRST TIME. Introduce yourself briefly as their all-knowing AI companion, greet them warmly, and tell them you are ready to help them survive.";
-            } else {
-                prompt = "The player " + player.getName().getString() + " just rejoined their existing world. Give them a very short, welcoming one-sentence welcome back greeting.";
-            }
+            String prompt = (gamesLeft == 0)
+                    ? "The player " + player.getName().getString() + " just joined this world for the VERY FIRST TIME. Introduce yourself briefly as their all-knowing AI companion, greet them warmly, and tell them you are ready to help them survive."
+                    : "The player " + player.getName().getString() + " just rejoined their existing world. Give them a very short, welcoming one-sentence welcome back greeting.";
 
             MistralClient.queryMistral(prompt, source).thenAccept(response -> {
                 player.sendMessage(Text.literal("[Mistral]: ").formatted(Formatting.GOLD).append(Text.literal(response).formatted(Formatting.WHITE)), false);

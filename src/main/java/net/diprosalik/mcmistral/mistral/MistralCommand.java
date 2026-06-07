@@ -45,7 +45,6 @@ public class MistralCommand {
                                         MistralClient.queryMistral(prompt, source).thenAccept(response -> {
                                             if (source.getEntity() instanceof ServerPlayerEntity player) {
                                                 player.sendMessage(Text.literal(""), true);
-
                                                 player.sendMessage(Text.literal(""), false);
                                                 player.sendMessage(Text.literal("[Mistral]: ").formatted(Formatting.GOLD).append(Text.literal(response).formatted(Formatting.WHITE)), false);
                                             }
