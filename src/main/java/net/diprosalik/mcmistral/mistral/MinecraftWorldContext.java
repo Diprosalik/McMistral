@@ -41,6 +41,7 @@ public class MinecraftWorldContext {
         context.append("- World Phase: ").append(worldPhase).append("\n");
         context.append("- Weather: ").append(world.isThundering() ? "Thunderstorm" : (world.isRaining() ? "Raining/Snowing" : "Clear/Sunny")).append("\n");
         context.append("- Difficulty: ").append(world.getDifficulty().getName()).append("\n");
+        context.append(" -Seed: ").append(world.getSeed()).append("\n");
 
         if (source.getEntity() instanceof ServerPlayerEntity player) {
             Vec3d pos = player.getPos();
