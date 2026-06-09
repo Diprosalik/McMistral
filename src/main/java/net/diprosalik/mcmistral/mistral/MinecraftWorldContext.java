@@ -74,7 +74,7 @@ public class MinecraftWorldContext {
             context.append("- Food Level: ").append(player.getHungerManager().getFoodLevel()).append("/20 (Saturation: ").append(String.format("%.1f", player.getHungerManager().getSaturationLevel())).append(")\n");
             context.append("- Experience: Level ").append(player.experienceLevel).append(" (Progress: ").append(String.format("%.1f", player.experienceProgress * 100)).append("%)\n");
 
-            var biomeKey = world.getRegistryManager().get(RegistryKeys.BIOME).getId(world.getBiome(blockPos).value());
+            var biomeKey = world.getRegistryManager().getOrThrow(RegistryKeys.BIOME).getId(world.getBiome(blockPos).value());
             context.append("- Current Biome: ").append(biomeKey != null ? biomeKey.toString() : "Unknown").append("\n");
 
             appendStatusEffects(context, player);
