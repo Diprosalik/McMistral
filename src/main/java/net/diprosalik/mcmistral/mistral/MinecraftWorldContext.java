@@ -1,5 +1,6 @@
 package net.diprosalik.mcmistral.mistral;
 
+import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.registry.Registries;
@@ -58,7 +59,7 @@ public class MinecraftWorldContext {
             context.append(String.format("- XYZ Coordinates: X: %.3f, Y: %.5f, Z: %.3f\n", pos.x, pos.y, pos.z));
             context.append(String.format("- Block Pos: [%d, %d, %d]\n", blockPos.getX(), blockPos.getY(), blockPos.getZ()));
             context.append(String.format("- Chunk Pos: [%d, %d] (In Chunk Local: X: %d, Y: %d, Z: %d)\n", chunkPos.x, chunkPos.z, blockPos.getX() & 15, blockPos.getY() & 15, blockPos.getZ() & 15));
-            context.append("- Facing Direction: ").append(player.getHorizontalFacing().getName().toUpperCase()).append(" (Yaw: ").append(String.format("%.1f", player.getYaw())).append(" / Pitch: ").append(String.format("%.1f", player.getPitch())).append(")\n");
+            context.append("- Facing Direction: ").append(player.getHorizontalFacing().name().toUpperCase()).append(" (Yaw: ").append(String.format("%.1f", player.getYaw())).append(" / Pitch: ").append(String.format("%.1f", player.getPitch())).append(")\n");
             context.append(String.format("- F3 Light Level: %d (Sky: %d, Block: %d)\n", totalLight, skyLight, blockLight));
             context.append("- Is in Cave/Underground: ").append(isInCave).append("\n");
             context.append("- Sea Level Reference: ").append(seaLevel).append("\n");
@@ -66,7 +67,7 @@ public class MinecraftWorldContext {
             context.append("\n=== PLAYER STATUS ===\n");
             context.append("- Name: ").append(player.getName().getString()).append("\n");
             context.append("- Has permission Level 2: ").append(source.hasPermissionLevel(2)).append("\n");
-            context.append("- Gamemode: ").append(player.interactionManager.getGameMode().getName()).append("\n");
+            context.append("- Gamemode: ").append(player.interactionManager.getGameMode().name()).append("\n");
             context.append("- Is on Ground: ").append(player.isOnGround()).append("\n");
             context.append("- Is Swimming: ").append(player.isSwimming()).append("\n");
             context.append("- Is Sneaking: ").append(player.isSneaking()).append("\n");
@@ -81,7 +82,7 @@ public class MinecraftWorldContext {
 
             context.append("- Main Hand: ").append(Registries.ITEM.getId(player.getMainHandStack().getItem()).toString()).append(" (Count: ").append(player.getMainHandStack().getCount()).append(")\n");
             context.append("- Off Hand: ").append(Registries.ITEM.getId(player.getOffHandStack().getItem()).toString()).append("\n");
-            context.append("- Armor: [Helmet: ").append(Registries.ITEM.getId(player.getInventory().getArmorStack(3).getItem()).toString()).append(", Chestplate: ").append(Registries.ITEM.getId(player.getInventory().getArmorStack(2).getItem()).toString()).append(", Leggings: ").append(Registries.ITEM.getId(player.getInventory().getArmorStack(1).getItem()).toString()).append(", Boots: ").append(Registries.ITEM.getId(player.getInventory().getArmorStack(0).getItem()).toString()).append("]\n");
+            context.append("- Armor: [Helmet: ").append(Registries.ITEM.getId(player.getEquippedStack(EquipmentSlot.HEAD).getItem()).toString()).append(", Chestplate: ").append(Registries.ITEM.getId(player.getEquippedStack(EquipmentSlot.BODY).getItem()).toString()).append(", Leggings: ").append(Registries.ITEM.getId(player.getEquippedStack(EquipmentSlot.LEGS).getItem()).toString()).append(", Boots: ").append(Registries.ITEM.getId(player.getEquippedStack(EquipmentSlot.FEET).getItem()).toString()).append("]\n");
 
             appendInventory(context, player);
             appendModRecipes(context);
