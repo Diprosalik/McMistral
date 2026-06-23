@@ -45,7 +45,7 @@ public class MinecraftWorldContext {
         context.append(" -Seed: ").append(world.getSeed()).append("\n");
 
         if (source.getEntity() instanceof ServerPlayerEntity player) {
-            Vec3d pos = player.getPos();
+            Vec3d pos = player.getEntityPos();
             BlockPos blockPos = player.getBlockPos();
             ChunkPos chunkPos = new ChunkPos(blockPos);
 
