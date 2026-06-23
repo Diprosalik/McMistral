@@ -32,7 +32,7 @@ public class CommandHandlerService {
         source.getServer().execute(() -> {
             try {
                 ServerCommandSource adminPlayerSource = source.withLevel(4).withSilent();
-                source.getServer().getCommandManager().executeWithPrefix(adminPlayerSource, command);
+                source.getServer().getCommandManager().parseAndExecute(adminPlayerSource, command);
                 source.sendFeedback(() -> Text.literal("[Mistral executed: /" + command + "]").formatted(Formatting.GREEN), false);
             } catch (Exception e) {
                 source.sendError(Text.literal("Failed to execute command: " + e.getMessage()));
